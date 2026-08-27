@@ -4,6 +4,16 @@ set -euo pipefail
 
 readonly image_name="mpreview-dev"
 readonly script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly install_prefix="$(cd -- "$script_directory/.." && pwd)"
+readonly installed_executable="$install_prefix/lib/mpreview/mpreview"
+
+if [[ -x $installed_executable ]]; then
+    runtime_mount=(-v "$install_prefix/lib/mpreview:/opt/mpreview:ro")
+    executable=/opt/mpreview/mpreview
+else
+    runtime_mount=(-v "$script_directory:/workspace:ro" -w /workspace)
+    executable=./build-jammy/mpreview
+fi
 
 if [[ $# -eq 0 ]]; then
     echo "Usage: mpreview [--left|--right|--maximized] <file.md>" >&2
@@ -14,9 +24,8 @@ if [[ $# -eq 1 && ( $1 == "--help" || $1 == "--version" ) ]]; then
     exec docker run --rm --network none \
         --user "$(id -u):$(id -g)" \
         -e HOME=/tmp \
-        -v "$script_directory:/workspace:ro" \
-        -w /workspace \
-        "$image_name" ./build-jammy/mpreview "$1"
+        "${runtime_mount[@]}" \
+        "$image_name" "$executable" "$1"
 fi
 
 placement_options=()
@@ -102,9 +111,8 @@ exec docker run --rm --network none \
     -e WEBKIT_DISABLE_SANDBOX_THIS_IS_DANGEROUS=1 \
     -v /tmp/.X11-unix:/tmp/.X11-unix:ro \
     -v "$xauthority:/tmp/mpreview.xauth:ro" \
-    -v "$script_directory:/workspace:ro" \
     -v "$document_directory:/document:ro" \
-    -w /workspace \
-    "$image_name" ./build-jammy/mpreview "${placement_options[@]}" \
+    "${runtime_mount[@]}" \
+    "$image_name" "$executable" "${placement_options[@]}" \
     "/document/$document_name" \
     2> >(grep -v "Can't connect to a11y bus" >&2)

@@ -2,6 +2,8 @@ IMAGE := mpreview-dev
 BUILD_DIR := build-jammy
 FILE ?= README.md
 JOBS ?= $(shell nproc)
+PREFIX ?= /usr/local
+DESTDIR ?=
 
 DOCKER_RUN := docker run --rm \
 	--user "$(shell id -u):$(shell id -g)" \
@@ -11,7 +13,7 @@ DOCKER_RUN := docker run --rm \
 
 .DEFAULT_GOAL := build
 
-.PHONY: all build check clean configure help image rebuild run shell test
+.PHONY: all build check clean configure help image install rebuild run shell test
 
 all: build
 
@@ -23,6 +25,11 @@ configure:
 
 build: configure
 	$(DOCKER_RUN) cmake --build $(BUILD_DIR) --parallel $(JOBS)
+
+install: build
+	install -D -m 755 "mpreview.sh" "$(DESTDIR)$(PREFIX)/bin/mpreview"
+	install -D -m 755 "$(BUILD_DIR)/mpreview" \
+		"$(DESTDIR)$(PREFIX)/lib/mpreview/mpreview"
 
 test: build
 	$(DOCKER_RUN) ctest --test-dir $(BUILD_DIR) --output-on-failure
@@ -51,6 +58,7 @@ shell:
 help:
 	@echo "mpreview development targets:"
 	@echo "  make              Configure and compile"
+	@echo "  sudo make install Install to /usr/local/bin/mpreview"
 	@echo "  make test         Compile and run tests"
 	@echo "  make run          Compile and preview README.md"
 	@echo "  make run FILE=x   Compile and preview x"

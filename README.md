@@ -3,68 +3,46 @@
 `mpreview` is a small native Linux Markdown previewer. It renders GitHub-Flavored
 Markdown in a GTK window and reloads automatically when the source file is saved.
 
-## Dependencies
+## Quick start
 
-On Ubuntu 22.04 or newer:
+The host only needs Docker Engine, `make`, and an X11 display (native X11 or XWayland).
+GTK, WebKitGTK, cmark-gfm, CMake, and the compiler stay inside the Docker image.
 
-```bash
-sudo apt update
-sudo apt install build-essential cmake pkg-config libgtk-4-dev \
-  libwebkitgtk-6.0-dev libcmark-gfm-dev libcmark-gfm-extensions-dev
-```
-
-The `universe` repository may need to be enabled for the WebKitGTK and cmark-gfm
-development packages.
-
-## Build and install
+From the cloned repository:
 
 ```bash
-cmake -S . -B build
-cmake --build build
-sudo cmake --install build
-```
-
-### Containerized development
-
-To keep development libraries off the host, build the Ubuntu 22.04 development image:
-
-```bash
-docker build -t mpreview-dev -f docker/Dockerfile .
-```
-
-The usual development commands are wrapped by the Makefile:
-
-```bash
-make
-make test
-make run
-make run FILE=docs/design.md
-make clean
-make rebuild
 make image
+sudo make install
+mpreview README.md
 ```
 
-Configure and compile in an ephemeral container. Passing the host user and group IDs
-keeps generated files owned by the current user:
+Your user must be able to run Docker without `sudo`. If Docker reports permission
+denied, add the user to the Docker group and then log out and back in:
 
 ```bash
-docker run --rm --user "$(id -u):$(id -g)" \
-  -v "$PWD:/workspace" -w /workspace mpreview-dev \
-  bash -lc 'cmake -S . -B build-jammy && cmake --build build-jammy'
+sudo usermod -aG docker "$USER"
 ```
 
-Run the preview through the included launcher:
+To refresh the group in the current terminal instead:
 
 ```bash
-./mpreview.sh README.md
+newgrp docker
+```
+
+## Development
+
+```bash
+make          # build in Docker
+make test     # build and run tests in Docker
+make run      # preview README.md from the repository
 ```
 
 Tile or maximize the preview at startup:
 
 ```bash
-./mpreview.sh --right README.md
-./mpreview.sh --left README.md
-./mpreview.sh --maximized README.md
+mpreview --right README.md
+mpreview --left README.md
+mpreview --maximized README.md
 ```
 
 Exact left/right placement is supported on X11. Wayland intentionally leaves window
@@ -73,13 +51,11 @@ placement to the desktop compositor.
 The launcher detects the host light/dark preference. It can also be overridden:
 
 ```bash
-MPREVIEW_THEME=dark ./mpreview.sh README.md
-MPREVIEW_THEME=light ./mpreview.sh README.md
+MPREVIEW_THEME=dark mpreview README.md
+MPREVIEW_THEME=light mpreview README.md
 ```
 
-WebKit's inner process sandbox is disabled only for this nested-container workflow;
-Docker networking and source mounts remain read-only. A normal host installation
-does not need that environment variable.
+Docker networking and source mounts are read-only at runtime.
 
 ## Usage
 
