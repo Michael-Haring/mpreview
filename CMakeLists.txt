@@ -26,7 +26,14 @@ target_link_libraries(mpreview PRIVATE
 )
 
 include(GNUInstallDirs)
-install(TARGETS mpreview RUNTIME DESTINATION "${CMAKE_INSTALL_BINDIR}")
+file(RELATIVE_PATH MPREVIEW_BINARY_RELATIVE_PATH
+    "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_BINDIR}"
+    "${CMAKE_INSTALL_PREFIX}/${CMAKE_INSTALL_LIBDIR}/mpreview/mpreview")
+configure_file(mpreview-launcher.sh.in
+    "${CMAKE_CURRENT_BINARY_DIR}/mpreview-launcher" @ONLY)
+install(TARGETS mpreview RUNTIME DESTINATION "${CMAKE_INSTALL_LIBDIR}/mpreview")
+install(PROGRAMS "${CMAKE_CURRENT_BINARY_DIR}/mpreview-launcher"
+    DESTINATION "${CMAKE_INSTALL_BINDIR}" RENAME mpreview)
 
 include(CTest)
 if(BUILD_TESTING)

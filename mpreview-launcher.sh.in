@@ -1,0 +1,49 @@
+#!/usr/bin/env bash
+
+set -uo pipefail
+
+readonly script_directory="$(cd -- "$(dirname -- "${BASH_SOURCE[0]}")" && pwd)"
+readonly executable="$script_directory/@MPREVIEW_BINARY_RELATIVE_PATH@"
+
+if [[ ! -x $executable ]]; then
+    echo "mpreview: executable is missing: $executable" >&2
+    echo "mpreview: reinstall from the project directory with: sudo make install" >&2
+    exit 127
+fi
+
+"$executable" "$@"
+status=$?
+
+if [[ $status -eq 127 ]]; then
+    missing_libraries="$(ldd "$executable" 2>/dev/null |
+        awk '$2 == "=>" && $3 == "not" && $4 == "found" { print $1 }')"
+    if [[ -n $missing_libraries ]]; then
+        echo "mpreview: required runtime libraries are missing:" >&2
+        known_ubuntu_libraries=true
+        while IFS= read -r library; do
+            printf '  %s\n' "$library" >&2
+            case $library in
+                libgtk-4.so.1|libwebkitgtk-6.0.so.4|libX11.so.6|\
+                libcmark-gfm.so.0.29.0.gfm.6|\
+                libcmark-gfm-extensions.so.0.29.0.gfm.6) ;;
+                *) known_ubuntu_libraries=false ;;
+            esac
+        done <<< "$missing_libraries"
+        if [[ $known_ubuntu_libraries == true ]]; then
+            cat >&2 <<'EOF'
+On Ubuntu 24.04, install them with:
+  sudo apt update
+  sudo apt install libgtk-4-1 libwebkitgtk-6.0-4 libx11-6 \
+    libcmark-gfm0.29.0.gfm.6 libcmark-gfm-extensions0.29.0.gfm.6
+EOF
+        else
+            cat >&2 <<'EOF'
+This executable may have been built for a different Linux release. From the
+project directory, rebuild and install it against this host's libraries:
+  sudo make install
+EOF
+        fi
+    fi
+fi
+
+exit "$status"

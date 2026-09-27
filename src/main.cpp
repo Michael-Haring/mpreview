@@ -29,15 +29,10 @@ Options:
 The default window is centered at 1100x820. Exact left/right placement is controlled
 by the desktop compositor on Wayland and may be ignored there.
 
-Container launcher environment:
-  MPREVIEW_THEME=system  Follow the host desktop theme (default)
-  MPREVIEW_THEME=dark    Force dark mode
-  MPREVIEW_THEME=light   Force light mode
-
 Examples:
-  ./mpreview.sh README.md
-  ./mpreview.sh --right docs/design.md
-  MPREVIEW_THEME=dark ./mpreview.sh --left notes.md
+  mpreview README.md
+  mpreview --right docs/design.md
+  mpreview --left notes.md
 )HELP";
 }
 
